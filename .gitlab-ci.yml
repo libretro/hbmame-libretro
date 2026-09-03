@@ -14,9 +14,9 @@ include:
   - project: 'libretro-infrastructure/ci-templates'
     file: '/windows-x64-mingw.yml'
     
-  # # Windows 32-bit
-  #- project: 'libretro-infrastructure/ci-templates'
-  #  file: '/windows-i686-mingw.yml'
+  # Windows 32-bit
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/windows-i686-mingw.yml'
 
   # Linux 64-bit
   - project: 'libretro-infrastructure/ci-templates'
@@ -27,8 +27,8 @@ include:
     file: '/linux-aarch64.yml'
 
   # Linux 32-bit
-  #- project: 'libretro-infrastructure/ci-templates'
-  #  file: '/linux-i686.yml'
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/linux-i686.yml'
 
   # MacOS 64-bit
   - project: 'libretro-infrastructure/ci-templates'
@@ -82,9 +82,15 @@ stages:
 
 # Cache
 # Need to set a proper key in each job
+# The -v2 suffix abandons the old cache namespace on purpose: it holds
+# emu.h.gch files built against source mtimes that no longer exist, and
+# nothing in the build rebuilds them, so clang/gcc fail the PCH validity
+# check instead ("has been modified since the precompiled header was
+# built" / "one or more PCH files were found, but they were invalid").
+# Bump the suffix again if that ever comes back.
 cache: &global_cache
   untracked: true
-  key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+  key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG-v2"
   paths:
     - build/
 
@@ -106,15 +112,16 @@ libretro-build-windows-x64:
     - /^libretro/mame.*$/
 
 # Windows 32-bit
-#libretro-build-windows-i686:
-#  extends:
-#    - .libretro-windows-i686-mingw-make-default
-#    - .core-defs
-#  cache:
-#    <<: *global_cache
-#  only:
-#    - master
-#    - /^libretro/mame.*$/
+libretro-build-windows-i686:
+  extends:
+    - .libretro-windows-i686-mingw-make-default
+    - .core-defs
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-mxe-win-cross-cores:gcc14
+  cache:
+    <<: *global_cache
+  only:
+    - master
+    - /^libretro/mame.*$/
 
 # Linux 64-bit
 libretro-build-linux-x64:
@@ -148,28 +155,32 @@ libretro-build-linux-aarch64:
     - /^libretro/mame.*$/
 
 # Linux 32-bit
-#libretro-build-linux-i686:
-#  extends:
-#    - .libretro-linux-i686-make-default
-#    - .core-defs
-#  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-i386-ubuntu:backports
-#  variables:
-#    OVERRIDE_CC: /usr/bin/gcc-12
-#    OVERRIDE_CXX: /usr/bin/g++-12
-#    CXXFLAGS: -Wno-deprecated-declarations # Deprecation warnings aren't helpful on the libretro Gitlab
-#  cache:
-#    <<: *global_cache
-#  only:
-#    - master
-#    - /^libretro/mame.*$/
+libretro-build-linux-i686:
+  extends:
+    - .libretro-linux-i686-make-default
+    - .core-defs
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-i386-ubuntu:backports
+  variables:
+    OVERRIDE_CC: /usr/bin/gcc-12
+    OVERRIDE_CXX: /usr/bin/g++-12
+    CXXFLAGS: -Wno-deprecated-declarations # Deprecation warnings aren't helpful on the libretro Gitlab
+  cache:
+    <<: *global_cache
+  only:
+    - master
+    - /^libretro/mame.*$/
     
 # MacOS 64-bit
+# Cross-built on the Apple Silicon runner: the Intel mac runner is still on
+# Apple clang 12 and GENie stops with "Clang version 13 or later needed".
 libretro-build-osx-x64:
   extends:
     - .libretro-osx-x64-make-default
     - .core-defs
   variables:
     MACOSX_DEPLOYMENT_TARGET: "10.14"
+  tags:
+    - mac-apple-silicon
   cache:
     <<: *global_cache
   only:
@@ -191,19 +202,19 @@ libretro-build-osx-arm64:
     
 ################################### CELLULAR #################################
 # Android ARMv7a
-#android-armeabi-v7a:
-#  extends:
-#    - .libretro-android-make-armeabi-v7a
-#    - .core-defs
-#  variables:
-#    TARGET:    mame
-#    SUBTARGET: arcade
-#    CORENAME:  mamearcade
-#  cache:
-#    <<: *global_cache
-#  only:
-#    - master
-#    - /^libretro/mame.*$/
+android-armeabi-v7a:
+  extends:
+    - .libretro-android-make-armeabi-v7a
+    - .core-defs
+  variables:
+    TARGET: hbmame
+    ANDROID_NDK_NEXT: 29.0.14206865
+    WITH_ANDROID: 30
+  cache:
+    <<: *global_cache
+  only:
+    - master
+    - /^libretro/mame.*$/
 
 # Android ARMv8a
 android-arm64-v8a:
@@ -236,25 +247,34 @@ android-arm64-v8a:
 #    - /^libretro/mame.*$/
 
 # Android 64-bit x86
-#android-x86_64:
-#  extends:
-#    - .libretro-android-make-x86_64
-#    - .core-defs
-#  variables:
-#    TARGET:    mame
-#    SUBTARGET: arcade
-#    CORENAME:  mamearcade
-#  cache:
-#    <<: *global_cache
-#  only:
-#    - master
-#    - /^libretro/mame.*$/
-    
-# # Android 32-bit x86
-# android-x86:
-#   extends:
-#     - .libretro-android-jni-x86
-#     - .core-defs
+android-x86_64:
+  extends:
+    - .libretro-android-make-x86_64
+    - .core-defs
+  variables:
+    TARGET: hbmame
+    ANDROID_NDK_NEXT: 29.0.14206865
+    WITH_ANDROID: 30
+  cache:
+    <<: *global_cache
+  only:
+    - master
+    - /^libretro/mame.*$/
+
+# Android 32-bit x86
+android-x86:
+  extends:
+    - .libretro-android-make-x86
+    - .core-defs
+  variables:
+    TARGET: hbmame
+    ANDROID_NDK_NEXT: 29.0.14206865
+    WITH_ANDROID: 30
+  cache:
+    <<: *global_cache
+  only:
+    - master
+    - /^libretro/mame.*$/
 
 # iOS
 libretro-build-ios-arm64:

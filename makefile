@@ -1262,25 +1262,51 @@ endif
 # android-x86
 #-------------------------------------------------
 
+ifeq ($(OSD), retro)
+#RETRO HACK no sdl for libretro android
+$(PROJECTDIR)/$(MAKETYPE)-android-x86/Makefile: makefile $(SCRIPTS) $(GENIE)
+	$(SILENT) $(GENIE) $(PARAMS) $(TARGET_PARAMS) --gcc=android-x86 --gcc_version=$(CLANG_VERSION) --osd=retro --targetos=android --PLATFORM=x86 --NO_USE_MIDI=1 --NO_OPENGL=1 --USE_QTDEBUG=0 --DONT_USE_NETWORK=1 --NOASM=1 $(MAKETYPE)
+else
 $(PROJECTDIR_SDL)/$(MAKETYPE)-android-x86/Makefile: makefile $(SCRIPTS) $(GENIE)
 	$(SILENT) $(GENIE) $(PARAMS) --gcc=android-x86 --gcc_version=$(CLANG_VERSION) --osd=sdl3 --targetos=android --PLATFORM=x86 $(MAKETYPE)
+endif # ifdef RETRO
 
 .PHONY: android-x86
+
+ifeq ($(OSD), retro)
+android-x86: android-ndk generate $(PROJECTDIR)/$(MAKETYPE)-android-x86/Makefile
+	$(SILENT) $(MAKE) $(MAKEPARAMS) -C $(PROJECTDIR)/$(MAKETYPE)-android-x86 config=$(CONFIG) precompile
+	$(SILENT) $(MAKE) $(MAKEPARAMS) -C $(PROJECTDIR)/$(MAKETYPE)-android-x86 config=$(CONFIG)
+else
 android-x86: android-ndk generate $(PROJECTDIR_SDL)/$(MAKETYPE)-android-x86/Makefile
 	$(SILENT) $(MAKE) $(MAKEPARAMS) -C $(PROJECTDIR_SDL)/$(MAKETYPE)-android-x86 config=$(CONFIG) precompile
 	$(SILENT) $(MAKE) $(MAKEPARAMS) -C $(PROJECTDIR_SDL)/$(MAKETYPE)-android-x86 config=$(CONFIG)
+endif
 
 #-------------------------------------------------
 # android-x64
 #-------------------------------------------------
 
+ifeq ($(OSD), retro)
+#RETRO HACK no sdl for libretro android
+$(PROJECTDIR)/$(MAKETYPE)-android-x64/Makefile: makefile $(SCRIPTS) $(GENIE)
+	$(SILENT) $(GENIE) $(PARAMS) $(TARGET_PARAMS) --gcc=android-x64 --gcc_version=$(CLANG_VERSION) --osd=retro --targetos=android --PLATFORM=x64 --NO_USE_MIDI=1 --NO_OPENGL=1 --USE_QTDEBUG=0 --DONT_USE_NETWORK=1 --NOASM=1 $(MAKETYPE)
+else
 $(PROJECTDIR_SDL)/$(MAKETYPE)-android-x64/Makefile: makefile $(SCRIPTS) $(GENIE)
 	$(SILENT) $(GENIE) $(PARAMS) --gcc=android-x64 --gcc_version=$(CLANG_VERSION) --osd=sdl3 --targetos=android --PLATFORM=x64 $(MAKETYPE)
+endif # ifdef RETRO
 
 .PHONY: android-x64
+
+ifeq ($(OSD), retro)
+android-x64: android-ndk generate $(PROJECTDIR)/$(MAKETYPE)-android-x64/Makefile
+	$(SILENT) $(MAKE) $(MAKEPARAMS) -C $(PROJECTDIR)/$(MAKETYPE)-android-x64 config=$(CONFIG) precompile
+	$(SILENT) $(MAKE) $(MAKEPARAMS) -C $(PROJECTDIR)/$(MAKETYPE)-android-x64 config=$(CONFIG)
+else
 android-x64: android-ndk generate $(PROJECTDIR_SDL)/$(MAKETYPE)-android-x64/Makefile
 	$(SILENT) $(MAKE) $(MAKEPARAMS) -C $(PROJECTDIR_SDL)/$(MAKETYPE)-android-x64 config=$(CONFIG) precompile
 	$(SILENT) $(MAKE) $(MAKEPARAMS) -C $(PROJECTDIR_SDL)/$(MAKETYPE)-android-x64 config=$(CONFIG)
+endif
 
 #-------------------------------------------------
 # asmjs / Emscripten
